@@ -1,292 +1,160 @@
-#!/bin/bash
-#wget https://github.com/${GitUser}/
-GitUser="KhaiVpn767"
-if [ "${EUID}" -ne 0 ]; then
-		echo "You need to run this script as root"
-		exit 1
-fi
-if [ "$(systemd-detect-virt)" == "openvz" ]; then
-		echo "OpenVZ is not supported"
-		exit 1
-fi
-red='\e[1;31m'
-green='\e[0;32m'
-NC='\e[0m'
-#IZIN SCRIPT
-MYIP=$(wget -qO- ipinfo.io/ip);
-echo -e ""
-echo -e "\e[94m              .-----------------------------------------------.    "
-echo -e "\e[94m              |          Installing Autoscript Begin          |    "
-echo -e "\e[94m              '-----------------------------------------------'    "
-echo -e "\e[0m"
-echo ""
-sleep 1
-# Insert Password
-Password=khaivpnking
-# Execute
-read -p "Please Insert The License Key : " Passwordnya
-if [ $Password = $Passwordnya ]; then
-clear
-echo -e ""
-echo -e "${green}Permission Accepted...${NC}"
-echo ""
-echo "Thanks For Using This Autoscript-Lite By khaivpn"
-echo ""
-sleep 3
-else
-clear
-echo -e "${red}Permission Denied!${NC}";
-echo -e "${red}Please Insert The Correct License Key !${NC}"
-echo ""
-echo -e "Please Contact ${green}Admin${NC}"
-echo -e "Telegram : t.me/KhaiVpn767"
-rm -f setup2.sh
-exit 0
-fi
-clear
-echo -e "\e[32mloading...\e[0m"
-clear
-mkdir /var/lib/premium-script;
-default_email=$( curl https://raw.githubusercontent.com/${GitUser}/email/main/default.conf )
-clear
-#Nama penyedia script
-echo -e "\e[1;32m════════════════════════════════════════════════════════════\e[0m"
-echo ""
-echo -e "   \e[1;32mPlease enter the name of Provider for Script."
-read -p "   Name : " nm
-echo $nm > /root/provided
-echo ""
-#Email domain
-echo -e "\e[1;32m════════════════════════════════════════════════════════════\e[0m"
-echo -e ""
-echo -e "   \e[1;32mPlease enter your email Domain/Cloudflare."
-echo -e "   \e[1;31m(Press ENTER for default email)\e[0m"
-read -p "   Email : " email
-default=${default_email}
-new_email=$email
-if [[ $email == "" ]]; then
-sts=$default_email
-else
-sts=$new_email
-fi
-# email
-mkdir -p /usr/local/etc/xray/
-touch /usr/local/etc/xray/email
-echo $sts > /usr/local/etc/xray/email
-echo ""
-echo -e "\e[1;32m════════════════════════════════════════════════════════════\e[0m"
-echo ""
-echo -e "   .----------------------------------."
-echo -e "   |\e[1;32mPlease select a domain type below \e[0m|"
-echo -e "   '----------------------------------'"
-echo -e "     \e[1;32m1)\e[0m Enter your Subdomain"
-echo -e "     \e[1;32m2)\e[0m Use a random Subdomain"
-echo -e "   ------------------------------------"
-read -p "   Please select numbers 1-2 or Any Button(Random) : " host
-echo ""
-if [[ $host == "1" ]]; then
-echo -e "   \e[1;32mPlease enter your subdomain "
-read -p "   Subdomain: " host1
-echo "IP=" >> /var/lib/premium-script/ipvps.conf
-echo $host1 > /root/domain
-echo ""
-elif [[ $host == "2" ]]; then
-#install cf
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/cf.sh && chmod +x cf.sh && ./cf.sh
-rm -f /root/cf.sh
-clear
-else
-echo -e "Random Subdomain/Domain is used"
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/cf.sh && chmod +x cf.sh && ./cf.sh
-rm -f /root/cf.sh
-clear
-fi
-echo ""
-clear
-echo -e "\e[0;32mREADY FOR INSTALLATION SCRIPT...\e[0m"
-sleep 2
-#install ssh ovpn
-echo -e "\e[0;32mINSTALLING SSH & OVPN...\e[0m"
-sleep 1
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/ssh-vpn.sh && chmod +x ssh-vpn.sh && screen -S ssh-vpn ./ssh-vpn.sh
-echo -e "\e[0;32mDONE INSTALLING SSH & OVPN\e[0m"
-clear 2
-#pasang rc clone ssh ovpn
-wget https://raw.githubusercontent.com/KhaiVpn767/multiport002/main/backup/set-br.sh &&  chmod +x set-br.sh && ./set-br.sh
-echo -e "\e[0;32mDONE INSTALLING backup server\e[0m"
-sleep 1
-#install ssr
-echo -e "\e[0;32mINSTALLING SS & SSR...\e[0m"
-sleep 1
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/ssr.sh && chmod +x ssr.sh && screen -S ssr ./ssr.sh
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/sodosok.sh && chmod +x sodosok.sh && screen -S ss ./sodosok.sh
-echo -e "\e[0;32mDONE INSTALLING SS & SSR\e[0m"
-clear
-#installwg
-echo -e "\e[0;32mINSTALLING WIREGUARD...\e[0m"
-sleep 1
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/wg.sh && chmod +x wg.sh && screen -S wg ./wg.sh
-echo -e "\e[0;32mDONE INSTALLING WIREGUARD\e[0m"
-clear
-#Instal slowdns
-wget https://raw.githubusercontent.com/NevermoreSSH/Vergil/main2/addons/dns2.sh && chmod +x dns2.sh && ./dns2.sh
-echo -e "\e[0;32mDONE Install SLDNS\e[0m"
-clear2
-#install Xray
-echo -e "\e[0;32mINSTALLING XRAY CORE...\e[0m"
-sleep 1
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/ins-xray.sh && chmod +x ins-xray.sh && screen -S ins-xray ./ins-xray.sh
-echo -e "\e[0;32mDONE INSTALLING XRAY CORE\e[0m"
-clear
-#install Trojan GO
-echo -e "\e[0;32mINSTALLING TROJAN GO...\e[0m"
-sleep 1
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/trojan-go.sh && chmod +x trojan-go.sh && screen -S trojan-go ./trojan-go.sh
-echo -e "\e[0;32mDONE INSTALLING TROJAN GO\e[0m"
-clear
-#install SET-BR
-echo -e "\e[0;32mINSTALLING SET-BR...\e[0m"
-sleep 1
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/set-br.sh && chmod +x set-br.sh && ./set-br.sh
-echo -e "\e[0;32mDONE INSTALLING SET-BR...\e[0m"
-clear
-#install ohp-server
-echo -e "\e[0;32mINSTALLING OHP PORT...\e[0m"
-sleep 1
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/ohp.sh && chmod +x ohp.sh && ./ohp.sh
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/ohp-dropbear.sh && chmod +x ohp-dropbear.sh && ./ohp-dropbear.sh
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/install/ohp-ssh.sh && chmod +x ohp-ssh.sh && ./ohp-ssh.sh
-echo -e "\e[0;32mDONE INSTALLING OHP PORT\e[0m"
-clear
-#install websocket
-echo -e "\e[0;32mINSTALLING WEBSOCKET PORT...\e[0m"
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/websocket-python/websocket.sh && chmod +x websocket.sh && screen -S websocket.sh ./websocket.sh
-echo -e "\e[0;32mDONE INSTALLING WEBSOCKET PORT\e[0m"
-clear
-# set time GMT +8
-ln -fs /usr/share/zoneinfo/Asia/Kuala_Lumpur /etc/localtime
-# install clouflare JQ
-apt install jq curl -y
-# install webserver
-apt -y install nginx
-cd
-rm /etc/nginx/sites-enabled/default
-rm /etc/nginx/sites-available/default
-wget -O /etc/nginx/nginx.conf "https://raw.githubusercontent.com/${GitUser}/multiport/main/nginx.conf"
-mkdir -p /home/vps/public_html
-wget -O /etc/nginx/conf.d/vps.conf "https://raw.githubusercontent.com/${GitUser}/multiport/main/vps.conf"
-/etc/init.d/nginx restart
-#finish
-rm -f /root/ssh-vpn.sh
-rm -f /root/wg.sh
-rm -f /root/ss.sh
-rm -f /root/ssr.sh
-rm -f /root/ins-xray.sh
-rm -f /root/trojan-go.sh
-rm -f /root/set-br.sh
-rm -f /root/ohp.sh
-rm -f /root/ohp-dropbear.sh
-rm -f /root/ohp-ssh.sh
-rm -f /root/websocket.sh
-# Colour Default
-echo "1;36m" > /etc/banner
-echo "30m" > /etc/box
-echo "1;31m" > /etc/line
-echo "1;32m" > /etc/text
-echo "1;33m" > /etc/below
-echo "47m" > /etc/back
-echo "1;35m" > /etc/number
-echo 3d > /usr/bin/test
-# Version
-ver=$( curl https://raw.githubusercontent.com/${GitUser}/version-t/main/version.conf )
-history -c
-echo "$ver" > /home/ver
-clear
-echo " "
-echo "Installation has been completed!!"
-echo " "
-echo "=========================[SCRIPT PREMIUM]========================" | tee -a log-install.txt
-echo "" | tee -a log-install.txt
-echo "-----------------------------------------------------------------" | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "   >>> Service & Port"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "    [INFORMASI SSH & OpenVPN]" | tee -a log-install.txt
-echo "    -------------------------" | tee -a log-install.txt
-echo "   - OpenSSH                 : 22"  | tee -a log-install.txt
-echo "   - OpenVPN                 : TCP 1194, UDP 2200"  | tee -a log-install.txt
-echo "   - OpenVPN SSL             : 110"  | tee -a log-install.txt
-echo "   - Stunnel4                : 222, 777"  | tee -a log-install.txt
-echo "   - Dropbear                : 442, 109"  | tee -a log-install.txt
-echo "   - OHP Dropbear            : 8585"  | tee -a log-install.txt
-echo "   - OHP SSH                 : 8686"  | tee -a log-install.txt
-echo "   - OHP OpenVPN             : 8787"  | tee -a log-install.txt
-echo "   - Websocket SSH(HTTP)     : 2081"  | tee -a log-install.txt
-echo "   - Websocket SSL(HTTPS)    : 222"  | tee -a log-install.txt
-echo "   - Websocket OpenVPN       : 2084"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "    [INFORMASI Sqd, Bdvp, Ngnx]" | tee -a log-install.txt
-echo "    ---------------------------" | tee -a log-install.txt
-echo "   - Squid Proxy             : 3128, 8000 (limit to IP Server)"  | tee -a log-install.txt
-echo "   - Badvpn                  : 7100, 7200, 7300"  | tee -a log-install.txt
-echo "   - Nginx                   : 81"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "    [INFORMASI WG]"  | tee -a log-install.txt
-echo "    --------------" | tee -a log-install.txt
-echo "   - Wireguard               : 5820"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "    [INFORMASI Shadowsocks-R & Shadowsocks]"  | tee -a log-install.txt
-echo "    ---------------------------------------" | tee -a log-install.txt
-echo "   - Shadowsocks-R           : 1443-1543"  | tee -a log-install.txt
-echo "   - SS-OBFS TLS             : 2443-2543"  | tee -a log-install.txt
-echo "   - SS-OBFS HTTP            : 3443-3543"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "    [INFORMASI XRAY]" | tee -a log-install.txt
-echo "    ----------------" | tee -a log-install.txt
-echo "   - Xray Vmess Ws Tls       : 443"  | tee -a log-install.txt
-echo "   - Xray Vless Ws Tls       : 443"  | tee -a log-install.txt
-echo "   - Xray Vless Xtls         : 443"  | tee -a log-install.txt
-echo "   - Xray Vmess Ws None Tls  : 80"  | tee -a log-install.txt
-echo "   - Xray Vless Ws None Tls  : 8080"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "    [INFORMASI TROJAN]" | tee -a log-install.txt
-echo "    ------------------" | tee -a log-install.txt
-echo "   - Xray Trojan Ws Tls      : 443"  | tee -a log-install.txt
-echo "   - Xray Trojan Ws None Tls : 8880"  | tee -a log-install.txt
-echo "   - Trojan Go               : 8443"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "    [INFORMASI CLASH FOR ANDROID (YAML)]" | tee -a log-install.txt
-echo "    ------------------------------------" | tee -a log-install.txt
-echo "   - Shadowsocks Yaml        : Yes"  | tee -a log-install.txt
-echo "   - ShadowsocksR Yaml       : Yes"  | tee -a log-install.txt
-echo "   - Xray-Vmess Ws Yaml      : Yes"  | tee -a log-install.txt
-echo "   - Xray-Vless Ws Yaml      : Yes"  | tee -a log-install.txt
-echo "   - Xray-Trojan Ws Yaml     : Yes"  | tee -a log-install.txt
-echo "   --------------------------------------------------------------" | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "   >>> Server Information & Other Features"  | tee -a log-install.txt
-echo "   - Timezone                : Asia/Kuala_Lumpur (GMT +8)"  | tee -a log-install.txt
-echo "   - Fail2Ban                : [ON]"  | tee -a log-install.txt
-echo "   - Dflate                  : [ON]"  | tee -a log-install.txt
-echo "   - IPtables                : [ON]"  | tee -a log-install.txt
-echo "   - Auto-Reboot             : [ON]"  | tee -a log-install.txt
-echo "   - IPv6                    : [OFF]"  | tee -a log-install.txt
-echo "   - Autoreboot On 05.00 GMT +8" | tee -a log-install.txt
-echo "   - Autobackup Data" | tee -a log-install.txt
-echo "   - Restore Data" | tee -a log-install.txt
-echo "   - Auto Delete Expired Account" | tee -a log-install.txt
-echo "   - Full Orders For Various Services" | tee -a log-install.txt
-echo "   - White Label" | tee -a log-install.txt
-echo "   - Installation Log --> /root/log-install.txt"  | tee -a log-install.txt
-echo "------------------------Script By khaivpn---------------------" | tee -a log-install.txt
-clear
-echo ""
-echo ""
-echo -e "    \e[1;32m.------------------------------------------.\e[0m"
-echo -e "    \e[1;32m|     SUCCESFULLY INSTALLED THE SCRIPT     |\e[0m"
-echo -e "    \e[1;32m'------------------------------------------'\e[0m"
-echo ""
-echo -e "   \e[1;32mYour VPS Will Be Automatical Reboot In 5 seconds\e[0m"
-rm -r setup2.sh
-sleep 5
-reboot
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ==========================================================
+# FVPN + MULTIPORT One-Step Installer (No tar.gz required)
+# Repo: https://github.com/AkhmadSofwand/multiport
+# This script will:
+#   1) Install MULTIPORT VPN (upstream setup2.sh)
+#   2) Clone your repo and install FVPN WORKER agent from /fvpn
+# ==========================================================
+
+# ===== CONFIG =====
+UPSTREAM_MULTIPORT_SETUP_URL="https://raw.githubusercontent.com/KhaiVpn767/multiport/main/setup2.sh"
+
+# Repo kau (public)
+FVPN_REPO_GIT="https://github.com/AkhmadSofwand/multiport.git"
+FVPN_SUBDIR="fvpn"            # folder bot/agent dalam repo
+FVPN_SRC_DIR="/opt/fvpn-src"  # tempat clone repo (boleh tukar)
+
+# Agent defaults (boleh override: export AGENT_PORT=7000)
+AGENT_PORT="${AGENT_PORT:-7000}"
+AGENT_MAX_USERS="${AGENT_MAX_USERS:-100}"
+PUBLIC_TLS_PORT="${PUBLIC_TLS_PORT:-443}"
+
+# Optional security: allow agent port only from manager IP
+# contoh: export MANAGER_IP="1.2.3.4"
+MANAGER_IP="${MANAGER_IP:-}"
+
+log(){ echo -e "\n[+] $*"; }
+die(){ echo -e "\n[!] ERROR: $*" >&2; exit 1; }
+
+need_root(){
+  [[ "$(id -u)" == "0" ]] || die "Sila run sebagai root."
+}
+
+detect_xray_paths(){
+  # Default multiport paths
+  XRAY_DOMAIN_FILE="/usr/local/etc/xray/domain"
+  XRAY_VLESS_TLS_CONFIG="/usr/local/etc/xray/vless.json"
+  XRAY_VLESS_NONE_CONFIG="/usr/local/etc/xray/vnone.json"
+  XRAY_TROJAN_TLS_CONFIG="/usr/local/etc/xray/trojanws.json"
+
+  # fallback search
+  if [[ ! -f "$XRAY_DOMAIN_FILE" ]]; then
+    for p in /etc/xray/domain /usr/local/etc/xray/domain /etc/v2ray/domain; do
+      [[ -f "$p" ]] && XRAY_DOMAIN_FILE="$p" && break
+    done
+  fi
+
+  echo "$XRAY_DOMAIN_FILE|$XRAY_VLESS_TLS_CONFIG|$XRAY_VLESS_NONE_CONFIG|$XRAY_TROJAN_TLS_CONFIG"
+}
+
+install_deps(){
+  log "Install dependencies"
+  apt-get update -y
+  apt-get install -y \
+    bzip2 gzip coreutils screen curl wget unzip rsync \
+    python3 python3-venv python3-pip openssl git ufw
+}
+
+install_multiport(){
+  log "Install MULTIPORT VPN (upstream setup2.sh)"
+  cd /root
+  wget -O setup2_upstream.sh "$UPSTREAM_MULTIPORT_SETUP_URL"
+  chmod +x setup2_upstream.sh
+  ./setup2_upstream.sh
+}
+
+clone_repo(){
+  log "Clone repo FVPN (tanpa tar.gz): $FVPN_REPO_GIT"
+  rm -rf "$FVPN_SRC_DIR" || true
+  mkdir -p "$(dirname "$FVPN_SRC_DIR")"
+  git clone --depth 1 "$FVPN_REPO_GIT" "$FVPN_SRC_DIR"
+  [[ -d "$FVPN_SRC_DIR/$FVPN_SUBDIR" ]] || die "Tak jumpa folder '$FVPN_SUBDIR' dalam repo."
+  [[ -f "$FVPN_SRC_DIR/$FVPN_SUBDIR/install.sh" ]] || die "Tak jumpa '$FVPN_SUBDIR/install.sh'."
+}
+
+install_worker_agent(){
+  log "Install FVPN WORKER agent dari $FVPN_SRC_DIR/$FVPN_SUBDIR"
+  cd "$FVPN_SRC_DIR/$FVPN_SUBDIR"
+  chmod +x install.sh
+
+  IFS='|' read -r XRAY_DOMAIN_FILE XRAY_VLESS_TLS_CONFIG XRAY_VLESS_NONE_CONFIG XRAY_TROJAN_TLS_CONFIG < <(detect_xray_paths)
+
+  if [[ ! -f "$XRAY_DOMAIN_FILE" ]]; then
+    echo "[!] WARNING: domain file tak jumpa. Pastikan domain wujud. (Default: /usr/local/etc/xray/domain)"
+  fi
+  if [[ ! -f "$XRAY_VLESS_TLS_CONFIG" ]]; then
+    echo "[!] WARNING: vless.json tak jumpa di $XRAY_VLESS_TLS_CONFIG"
+  fi
+  if [[ ! -f "$XRAY_TROJAN_TLS_CONFIG" ]]; then
+    echo "[!] WARNING: trojanws.json tak jumpa di $XRAY_TROJAN_TLS_CONFIG"
+  fi
+
+  AGENT_API_KEY="$(openssl rand -hex 16)"
+  AGENT_DB_PATH="/var/lib/fvpn-agent/agent.db"
+  VLESS_WS_PATH="/vless"
+  TROJAN_WS_PATH="/trojan"
+
+  # Feed jawapan installer (MODE=2 Worker)
+  # Urutan prompt ikut install.sh (WORKER):
+  # mode, api_key, port, max_users, domain_file, tls_port, vless_tls, vless_none, trojan_tls, vless_path, trojan_path, db_path
+  printf "2\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n" \
+    "$AGENT_API_KEY" \
+    "$AGENT_PORT" \
+    "$AGENT_MAX_USERS" \
+    "$XRAY_DOMAIN_FILE" \
+    "$PUBLIC_TLS_PORT" \
+    "$XRAY_VLESS_TLS_CONFIG" \
+    "$XRAY_VLESS_NONE_CONFIG" \
+    "$XRAY_TROJAN_TLS_CONFIG" \
+    "$VLESS_WS_PATH" \
+    "$TROJAN_WS_PATH" \
+    "$AGENT_DB_PATH" | bash ./install.sh
+
+  log "Firewall rule for agent port ($AGENT_PORT)"
+  if [[ -n "$MANAGER_IP" ]]; then
+    ufw allow from "$MANAGER_IP" to any port "$AGENT_PORT" proto tcp || true
+    ufw deny "$AGENT_PORT"/tcp || true
+    echo "[+] UFW: allow only MANAGER_IP=$MANAGER_IP to port $AGENT_PORT"
+  else
+    ufw allow "$AGENT_PORT"/tcp || true
+    echo "[!] UFW: port $AGENT_PORT dibuka umum. RECOMMEND set MANAGER_IP."
+  fi
+  ufw --force enable || true
+
+  WORKER_IP="$(curl -fsSL ifconfig.me || true)"
+  DOMAIN="$(cat "$XRAY_DOMAIN_FILE" 2>/dev/null || true)"
+
+  log "DONE ✅ Worker siap."
+  echo "--------------------------------------------------"
+  echo "AGENT_API_KEY: $AGENT_API_KEY"
+  echo "AGENT_PORT   : $AGENT_PORT"
+  echo "MAX_USERS    : $AGENT_MAX_USERS"
+  echo "DOMAIN       : ${DOMAIN:-UNKNOWN}"
+  echo "PUBLIC IP    : ${WORKER_IP:-UNKNOWN}"
+  echo "--------------------------------------------------"
+  echo "PASTE dekat Telegram (admin) untuk register server:"
+  echo
+  echo "  /addserver FREE free1 https://${WORKER_IP:-WORKER_IP}:${AGENT_PORT} ${AGENT_API_KEY} ${AGENT_MAX_USERS}"
+  echo "  /addserver STAR star1 https://${WORKER_IP:-WORKER_IP}:${AGENT_PORT} ${AGENT_API_KEY} ${AGENT_MAX_USERS}"
+  echo
+  echo "NOTE: FREE pool = free/vip/convert. STAR pool = VIP Star."
+  echo "--------------------------------------------------"
+}
+
+main(){
+  need_root
+
+  log "Disable IPv6 + update"
+  sysctl -w net.ipv6.conf.all.disable_ipv6=1 || true
+  sysctl -w net.ipv6.conf.default.disable_ipv6=1 || true
+
+  install_deps
+  install_multiport
+  clone_repo
+  install_worker_agent
+}
+
+main "$@"
