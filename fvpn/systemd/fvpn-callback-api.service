@@ -1,0 +1,15 @@
+[Unit]
+Description=FVPN Callback API (ToyyibPay)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/fvpn
+EnvironmentFile=/etc/fvpn/fvpn.env
+ExecStart=/opt/fvpn/venv/bin/python /opt/fvpn/run_api.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
