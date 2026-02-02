@@ -3,20 +3,16 @@ import socket, threading, _thread, select, signal, sys, time, getopt
 
 # Listen
 LISTENING_ADDR = '0.0.0.0'
-if sys.argv[1:]:
-  LISTENING_PORT = sys.argv[1]
-else:
-  LISTENING_PORT = 700  
-#Pass
+LISTENING_PORT = sys.argv[1]
+
+# Pass
 PASS = ''
 
 # CONST
 BUFLEN = 4096 * 4
 TIMEOUT = 60
-DEFAULT_HOST = '127.0.0.1:109'
-RESPONSE = b'HTTP/1.1 101 Script By comingsoon\r\n\r\n'
-#RESPONSE = 'HTTP/1.1 200 Hello_World!\r\nContent-length: 0\r\n\r\nHTTP/1.1 200 Connection established\r\n\r\n'  # lint:ok
-
+DEFAULT_HOST = '127.0.0.1:1194'
+RESPONSE = b'HTTP/1.1 101 <b><u><font color="blue">Script By comingsoon</font></b>\r\n\r\nContent-Length: 104857600000\r\n\r\n'
 class Server(threading.Thread):
     def __init__(self, host, port):
         threading.Thread.__init__(self)
