@@ -1,14 +1,14 @@
 #!/bin/bash
 # By khaivpn
 # ==================================================
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 #wget https://github.com/${GitUser}/
 GitUser="KhaiVpn767"
 # initializing var
 export DEBIAN_FRONTEND=noninteractive
 MYIP=$(wget -qO- icanhazip.com);
 MYIP2="s/xxxxxxxxx/$MYIP/g";
-NET=$(ip -o -4 route show to default 2>/dev/null | awk '{print $5; exit}');
-[[ -z "$NET" ]] && NET="eth0";
+NET="$(ip -o -4 route show to default | awk '{print $5; exit}')"
 source /etc/os-release
 ver=$VERSION_ID
 
@@ -64,14 +64,14 @@ echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
 sed -i '$ i\echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6' /etc/rc.local
 
 #update
-apt update -y
-apt upgrade -y
-apt dist-upgrade -y
+apt-get update -y
+apt-get upgrade -y
+apt-get dist-upgrade -y
 apt-get remove --purge ufw firewalld -y
 apt-get remove --purge exim4 -y
 
 # install wget and curl
-apt -y install wget curl
+apt-get -y install wget curl
 
 # set time GMT +8
 ln -fs /usr/share/zoneinfo/Asia/Kuala_Lumpur /etc/localtime
@@ -133,26 +133,89 @@ echo "/bin/false" >> /etc/shells
 echo "/usr/sbin/nologin" >> /etc/shells
 /etc/init.d/dropbear restart
 
-# install squid for debian 9,10 & ubuntu 20.04
-apt -y install squid3
-# install squid for debian 11
-apt -y install squid
-wget -O /etc/squid/squid.conf "https://raw.githubusercontent.com/${GitUser}/multiport/main/squid3.conf"
-sed -i $MYIP2 /etc/squid/squid.conf
-
-# setting vnstat (Ubuntu 22.04+ / Debian 12+)
-apt -y install vnstat
-systemctl enable --now vnstat || true
-# init database untuk interface default
-vnstat -u -i "$NET" || true
-# set interface dalam config kalau masih eth0
-if [[ -f /etc/vnstat.conf ]]; then
-  sed -i "s/^Interface \".*\"/Interface \"$NET\"/g" /etc/vnstat.conf || true
+# install squid (Debian/Ubuntu modern)
+if apt-cache show squid >/dev/null 2>&1; then
+  apt-get -y install squid
+elif apt-cache show squid3 >/dev/null 2>&1; then
+  apt-get -y install squid3
+else
+  echo "[WARN] Squid package not found. Skipping squid install."
 fi
-systemctl restart vnstat || true
+cp "$SCRIPT_DIR/../squid3.conf" /etc/squid/squid.conf
+sed -i $MYIP2 /etc/squid/squid.conf
+mkdir -p /var/spool/squid
+chown -R proxy:proxy /var/spool/squid 2>/dev/null || true
+
+# setting vnstat
+apt -y install vnstat
+/etc/init.d/vnstat restart
+apt -y install libsqlite3-dev
+wget https://humdi.net/vnstat/vnstat-2.6.tar.gz
+tar zxvf vnstat-2.6.tar.gz
+cd vnstat-2.6
+./configure --prefix=/usr --sysconfdir=/etc && make && make install
+cd
+vnstat -u -i $NET
+sed -i 's/Interface "'""eth0""'"/Interface "'""$NET""'"/g' /etc/vnstat.conf
+chown vnstat:vnstat /var/lib/vnstat -R
+systemctl enable vnstat
+/etc/init.d/vnstat restart
+rm -f /root/vnstat-2.6.tar.gz
+rm -rf /root/vnstat-2.6
+
+# install stunnel
+apt-get install -y stunnel4
+cat > /etc/stunnel/stunnel.conf <<-END
+cert = /etc/stunnel/stunnel.pem
+client = no
+socket = a:SO_REUSEADDR=1
+socket = l:TCP_NODELAY=1
+socket = r:TCP_NODELAY=1
+
+[wss-dropbear]
+accept = 222
+connect = 127.0.0.1:2083
+
+[dropbear]
+accept = 777
+connect = 127.0.0.1:442
+
+[openvpn]
+accept = 110
+connect = 127.0.0.1:1194
+
+[ws-stunnel]
+accept = 2082
+connect = 443
+
+END
+
+# make a certificate
+openssl genrsa -out key.pem 2048
+openssl req -new -x509 -key key.pem -out cert.pem -days 1095 \
+-subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email"
+cat key.pem cert.pem >> /etc/stunnel/stunnel.pem
+
+# konfigurasi stunnel
+sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
+/lib/systemd/systemd-sysv-install enable stunnel4
+systemctl start stunnel4
+/etc/init.d/stunnel4 restart
+
+# Installing Websocket Python services (fix /usr/bin/python issue)
+if [[ -f "$SCRIPT_DIR/websocket.sh" ]]; then
+  bash "$SCRIPT_DIR/websocket.sh"
+fi
+
+
+#OpenVPN
+wget https://raw.githubusercontent.com/${GitUser}/multiport/main/vpn.sh &&  chmod +x vpn.sh && ./vpn.sh
+
+# install lolcat
+wget https://raw.githubusercontent.com/${GitUser}/multiport/main/lolcat.sh &&  chmod +x lolcat.sh && ./lolcat.sh
 
 # install fail2ban
-apt -y install fail2ban
+apt-get -y install fail2ban
 
 # Instal DDOS Flate
 if [ -d '/usr/local/ddos' ]; then
@@ -328,10 +391,10 @@ chown -R www-data:www-data /home/vps/public_html
 /etc/init.d/cron restart
 /etc/init.d/ssh restart
 /etc/init.d/dropbear restart
-systemctl restart fail2ban || service fail2ban restart || true
-systemctl restart vnstat || service vnstat restart || true
+/etc/init.d/fail2ban restart
+/etc/init.d/vnstat restart
 /etc/init.d/stunnel4 restart
-/etc/init.d/squid restart
+systemctl restart squid || service squid restart || true
 screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500
 screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 500
 screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 500
