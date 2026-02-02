@@ -7,7 +7,8 @@ GitUser="KhaiVpn767"
 export DEBIAN_FRONTEND=noninteractive
 MYIP=$(wget -qO- icanhazip.com);
 MYIP2="s/xxxxxxxxx/$MYIP/g";
-NET=$(ip -o $ANU -4 route show to default | awk '{print $5}');
+NET=$(ip -o -4 route show to default 2>/dev/null | awk '{print $5; exit}');
+[[ -z "$NET" ]] && NET="eth0";
 source /etc/os-release
 ver=$VERSION_ID
 
@@ -139,67 +140,16 @@ apt -y install squid
 wget -O /etc/squid/squid.conf "https://raw.githubusercontent.com/${GitUser}/multiport/main/squid3.conf"
 sed -i $MYIP2 /etc/squid/squid.conf
 
-# setting vnstat
+# setting vnstat (Ubuntu 22.04+ / Debian 12+)
 apt -y install vnstat
-/etc/init.d/vnstat restart
-apt -y install libsqlite3-dev
-wget https://humdi.net/vnstat/vnstat-2.6.tar.gz
-tar zxvf vnstat-2.6.tar.gz
-cd vnstat-2.6
-./configure --prefix=/usr --sysconfdir=/etc && make && make install
-cd
-vnstat -u -i $NET
-sed -i 's/Interface "'""eth0""'"/Interface "'""$NET""'"/g' /etc/vnstat.conf
-chown vnstat:vnstat /var/lib/vnstat -R
-systemctl enable vnstat
-/etc/init.d/vnstat restart
-rm -f /root/vnstat-2.6.tar.gz
-rm -rf /root/vnstat-2.6
-
-# install stunnel
-apt install stunnel4 -y
-cat > /etc/stunnel/stunnel.conf <<-END
-cert = /etc/stunnel/stunnel.pem
-client = no
-socket = a:SO_REUSEADDR=1
-socket = l:TCP_NODELAY=1
-socket = r:TCP_NODELAY=1
-
-[dropbear]
-accept = 222
-connect = 127.0.0.1:109
-
-[dropbear]
-accept = 777
-connect = 127.0.0.1:442
-
-[openvpn]
-accept = 110
-connect = 127.0.0.1:1194
-
-[ws-stunnel]
-accept = 2082
-connect = 443
-
-END
-
-# make a certificate
-openssl genrsa -out key.pem 2048
-openssl req -new -x509 -key key.pem -out cert.pem -days 1095 \
--subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email"
-cat key.pem cert.pem >> /etc/stunnel/stunnel.pem
-
-# konfigurasi stunnel
-sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
-/lib/systemd/systemd-sysv-install enable stunnel4
-systemctl start stunnel4
-/etc/init.d/stunnel4 restart
-
-#OpenVPN
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/vpn.sh &&  chmod +x vpn.sh && ./vpn.sh
-
-# install lolcat
-wget https://raw.githubusercontent.com/${GitUser}/multiport/main/lolcat.sh &&  chmod +x lolcat.sh && ./lolcat.sh
+systemctl enable --now vnstat || true
+# init database untuk interface default
+vnstat -u -i "$NET" || true
+# set interface dalam config kalau masih eth0
+if [[ -f /etc/vnstat.conf ]]; then
+  sed -i "s/^Interface \".*\"/Interface \"$NET\"/g" /etc/vnstat.conf || true
+fi
+systemctl restart vnstat || true
 
 # install fail2ban
 apt -y install fail2ban
@@ -378,8 +328,8 @@ chown -R www-data:www-data /home/vps/public_html
 /etc/init.d/cron restart
 /etc/init.d/ssh restart
 /etc/init.d/dropbear restart
-/etc/init.d/fail2ban restart
-/etc/init.d/vnstat restart
+systemctl restart fail2ban || service fail2ban restart || true
+systemctl restart vnstat || service vnstat restart || true
 /etc/init.d/stunnel4 restart
 /etc/init.d/squid restart
 screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500
