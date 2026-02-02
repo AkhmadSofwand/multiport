@@ -1,4 +1,3 @@
-\
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -201,6 +200,10 @@ echo
 echo "[5/5] Installing panel command: fvpn-panel"
 cp "$APP_DIR/panel.sh" /usr/local/bin/fvpn-panel
 chmod +x /usr/local/bin/fvpn-panel
+
+# Helper command to rerun installer / reconfigure
+cp "$APP_DIR/install.sh" /usr/local/bin/fvpn-install
+chmod +x /usr/local/bin/fvpn-install
 
 echo
 echo "DONE ✅"
