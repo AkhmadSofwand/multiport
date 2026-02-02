@@ -144,6 +144,66 @@ install_worker_agent(){
   echo "--------------------------------------------------"
 }
 
+install_menu_and_bot_wrappers(){
+  log "Integrate menu multiport + bot (Install Bot [18], Setting Bot [19])"
+
+  # 1) Wrapper commands
+  cat > /usr/local/bin/install-bot <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="/opt/fvpn-src"
+SUBDIR="fvpn"
+REPO_GIT="https://github.com/AkhmadSofwand/multiport.git"
+
+if [[ "$(id -u)" != "0" ]]; then
+  echo "[!] Sila run sebagai root."
+  exit 1
+fi
+
+if [[ ! -d "$REPO_DIR/$SUBDIR" ]]; then
+  echo "[*] Clone repo bot ke $REPO_DIR ..."
+  rm -rf "$REPO_DIR" || true
+  git clone --depth 1 "$REPO_GIT" "$REPO_DIR"
+fi
+
+cd "$REPO_DIR/$SUBDIR"
+chmod +x install.sh
+bash ./install.sh
+EOF
+  chmod +x /usr/local/bin/install-bot
+
+  cat > /usr/local/bin/setting-bot <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if command -v fvpn-panel >/dev/null 2>&1; then
+  exec fvpn-panel
+fi
+
+# fallback kalau panel belum ter-install
+if [[ -x /opt/fvpn-src/fvpn/panel.sh ]]; then
+  exec bash /opt/fvpn-src/fvpn/panel.sh
+fi
+
+echo "[!] Bot belum dipasang. Sila run: Install Bot (menu [18])"
+exit 1
+EOF
+  chmod +x /usr/local/bin/setting-bot
+
+  # 2) Patch menu utama (replace /usr/bin/menu) supaya ada [18] & [19]
+  if [[ -f "$FVPN_SRC_DIR/menu.sh" ]]; then
+    cp -f "$FVPN_SRC_DIR/menu.sh" /usr/bin/menu
+    chmod +x /usr/bin/menu
+  fi
+
+  # 3) Ensure PATH in .profile still points to menu
+  if [[ -f /root/.profile ]]; then
+    grep -qE '^menu$' /root/.profile || echo "menu" >> /root/.profile
+  fi
+}
+
+
 main(){
   need_root
 
@@ -155,6 +215,7 @@ main(){
   install_multiport
   clone_repo
   install_worker_agent
+  install_menu_and_bot_wrappers
 }
 
 main "$@"
