@@ -34,6 +34,21 @@ bash "$SCRIPT_DIR/install/wg.sh"
 # Deploy menu command
 install -m 0755 "$SCRIPT_DIR/menu.sh" /usr/bin/menu
 
+# =====================
+# BOT FVpn (Menu #14/#15)
+# =====================
+# Menu utama (menu.sh) dah ada pilihan:
+#   [14] Install Bot  -> /usr/bin/install-bot
+#   [15] Setting Bot  -> /usr/bin/set-bot
+# Tetapi command tersebut tak akan wujud kalau script bot tak dipasang.
+# Jadi kita pasang wrapper script bot sekali.
+if [ -f "$SCRIPT_DIR/fvpn/install.sh" ]; then
+  install -m 0755 "$SCRIPT_DIR/fvpn/install.sh" /usr/bin/install-bot
+fi
+if [ -f "$SCRIPT_DIR/fvpn/panel.sh" ]; then
+  install -m 0755 "$SCRIPT_DIR/fvpn/panel.sh" /usr/bin/set-bot
+fi
+
 echo
 echo "✅ Multiport siap."
 echo "Taip: menu"
