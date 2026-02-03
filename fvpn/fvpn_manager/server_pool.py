@@ -1,4 +1,12 @@
+\
 from __future__ import annotations
+
+
+def _normalize_base_url(base_url: str) -> str:
+    base_url = (base_url or "").strip().rstrip("/")
+    if base_url and not re.match(r"^https?://", base_url):
+        base_url = "http://" + base_url
+    return base_url
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -34,6 +42,7 @@ async def _agent_post(server: dict, path: str, payload: dict, timeout_sec: int) 
 
 
 async def select_server(db: Database, pool: str, bot: Bot, admin_id: int, timeout_sec: int) -> Optional[dict]:
+    pool = (pool or "").strip().upper()
     servers = await db.list_servers(pool)
     for s in servers:
         if int(s.get("enabled", 1)) != 1:
@@ -81,4 +90,24 @@ async def create_vpn_account(server: dict, protocol: str, days: int, timeout_sec
     except httpx.HTTPError as e:
         raise AgentError(f"Agent HTTP error: {e}")
     except Exception as e:
+        # fallback: kalau user simpan https:// tapi agent sebenarnya http://, cuba sekali lagi guna http://
+        if str(base_url).startswith("https://"):
+            try:
+                base_url_http = "http://" + str(base_url)[len("https://"):]
+                async with httpx.AsyncClient(timeout=5) as client:
+                    r = await client.post(f"{base_url_http}{path}", json=payload, headers={"x-agent-secret": secret})
+                    r.raise_for_status()
+                    return r.json()
+            except Exception:
+                pass
+        # fallback: kalau user simpan https:// tapi agent sebenarnya http://, cuba sekali lagi guna http://
+        if str(base_url).startswith("https://"):
+            try:
+                base_url_http = "http://" + str(base_url)[len("https://"):]
+                async with httpx.AsyncClient(timeout=5) as client:
+                    r = await client.get(f"{base_url_http}{path}", headers={"x-agent-secret": secret})
+                    r.raise_for_status()
+                    return r.json()
+            except Exception:
+                pass
         raise AgentError(f"Agent error: {e}")

@@ -1,6 +1,8 @@
+\
 from __future__ import annotations
 
 import os
+import re
 import asyncio
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -176,7 +178,73 @@ async def main() -> None:
         lang = normalize_lang(user.language)
         await message.answer("🛠 Admin Menu", reply_markup=kb_admin(lang))
 
-    @dp.message(Command("addserver"))
+    
+
+@dp.callback_query(F.data.startswith("admin:"))
+async def on_admin_buttons(cb: CallbackQuery):
+    # hentikan loading spinner cepat
+    await cb.answer()
+
+    try:
+        await cb.message.delete()
+    except Exception:
+        pass
+    if not await is_admin(cb.from_user.id):
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
+        await cb.message.answer("⛔ Akses ditolak.")
+        return
+
+    action = cb.data.split(":", 1)[1]
+
+    # auto-delete menu lama supaya tak bertimbun
+    try:
+        await cb.message.delete()
+    except Exception:
+        pass
+
+    if action == "add_server":
+        await cb.message.answer(
+            "➕ **Add Server**\n\n"
+            "Guna command berikut (contoh):\n"
+            "`/addserver FREE free1 http://IP:7000 <SECRET> 400`\n"
+            "`/addserver STAR star1 http://IP:7000 <SECRET> 400`\n\n"
+            "Nota: Port **7000** agent biasanya **HTTP**, jadi elakkan `https://` kecuali kau betul-betul set TLS.\n",
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=kb_admin(),
+        )
+        return
+
+    if action == "list_servers":
+        rows = await db.list_servers()
+        if not rows:
+            await cb.message.answer("📭 Tiada server dalam database.", reply_markup=kb_admin())
+            return
+        msg = ["📋 **Servers**\n"]
+        for s in rows:
+            msg.append(
+                f"#{s['id']} pool={s['pool']} enabled={s['enabled']} max={s['max_users']} name={s['name']}\n"
+                f"url={s['base_url']}"
+            )
+        await cb.message.answer("\n".join(msg), parse_mode=ParseMode.MARKDOWN, reply_markup=kb_admin())
+        return
+
+    if action == "unblock_user":
+        await cb.message.answer(
+            "🔓 **Unblock User**\n\n"
+            "Guna command:\n"
+            "`/unblock <TELEGRAM_USER_ID>`\n",
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=kb_admin(),
+        )
+        return
+
+    # fallback
+    await cb.message.answer("❓ Action tak dikenali.", reply_markup=kb_admin())
+
+@dp.message(Command("addserver"))
     async def addserver_cmd(message: Message) -> None:
         """
         /addserver FREE name https://1.2.3.4:7000 API_KEY 100
@@ -250,8 +318,18 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await render_gate(bot, db, settings, cb.message.chat.id, user)
 
     @dp.callback_query(F.data == "act:check_sub")
@@ -259,11 +337,21 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         ok, missing = await check_user_subscriptions(bot, cb.from_user.id, settings.required_channels)
         if not ok:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "subscription_fail"))
             return
         # mark subscribed and give 1 credit if first time
@@ -275,6 +363,11 @@ async def main() -> None:
             await db.maybe_award_referral_credit(referrer_id, max_refs=90)
 
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         if first_time and gave_credit:
             await cb.message.answer(t(lang, "subscription_ok"), parse_mode=ParseMode.MARKDOWN)
         else:
@@ -295,10 +388,20 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         await db.accept_agreement(cb.from_user.id)
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer("✅ Accepted.")
         user = await db.get_user(cb.from_user.id)
         await render_gate(bot, db, settings, cb.message.chat.id, user)  # type: ignore
@@ -308,14 +411,29 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         if not user.is_subscribed:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "subscribe_required"), reply_markup=kb_subscription(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
         if not user.agreement_accepted:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "agreement_required"), reply_markup=kb_agreement(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
 
@@ -323,6 +441,11 @@ async def main() -> None:
         star_until = str_to_dt(user.star_active_until)
         star_str = t(lang, "star_active", until=_fmt_date(star_until)) if (star_until and star_until > utcnow()) else t(lang, "star_inactive")
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(
             t(
                 lang,
@@ -342,18 +465,38 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         if not user.is_subscribed:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "subscribe_required"), reply_markup=kb_subscription(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
         if not user.agreement_accepted:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "agreement_required"), reply_markup=kb_agreement(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
 
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(
             t(lang, "convert_info", credits=user.credits),
             reply_markup=kb_protocols(lang, "convert", "convert"),
@@ -365,12 +508,22 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         claimed = await db.count_claimed_total(user.user_id)
         star_until = str_to_dt(user.star_active_until)
         star_str = t(lang, "star_active", until=_fmt_date(star_until)) if (star_until and star_until > utcnow()) else t(lang, "star_inactive")
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(
             t(
                 lang,
@@ -394,10 +547,20 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         link = f"https://t.me/{settings.bot_username}?start=ref_{user.user_id}"
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(
             t(lang, "invite", refs=user.referrals_count, credits=user.credits, link=link),
             parse_mode=ParseMode.MARKDOWN,
@@ -409,14 +572,29 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         if not await db.can_checkin_today(user.user_id):
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "checkin_already"), reply_markup=kb_back(lang))
             return
         points = await db.do_checkin(user.user_id)
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(t(lang, "checkin_ok", points=points), reply_markup=kb_back(lang))
 
     @dp.callback_query(F.data == "act:lang")
@@ -424,9 +602,19 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(t(lang, "lang_choose"), reply_markup=kb_language(lang))
 
     @dp.callback_query(F.data.startswith("setlang:"))
@@ -434,9 +622,19 @@ async def main() -> None:
         lang = cb.data.split(":", 1)[1]
         if lang not in ("ms", "en", "zh"):
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         await db.set_language(cb.from_user.id, lang)
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         user = await db.get_user(cb.from_user.id)
         await render_gate(bot, db, settings, cb.message.chat.id, user)  # type: ignore
 
@@ -445,12 +643,22 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         support_bot = settings.support_bot_token and "@"+ (settings.support_bot_token[:0] or "fvpngensupportbot")
         # can't derive username from token; use config bot_username? We'll use hardcoded env SUPPORT_BOT_USERNAME optional.
         support_username = (os.getenv("SUPPORT_BOT_USERNAME") or "fvpngensupportbot").lstrip("@")
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(t(lang, "support_hint", support_bot=support_username), reply_markup=kb_back(lang))
 
     # --- Payment ---
@@ -460,13 +668,28 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         if not settings.toyyibpay_enabled or not toyyib:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer("ToyyibPay is not configured.")
             return
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(t(lang, "payment_warning"), parse_mode=ParseMode.MARKDOWN)
         await cb.message.answer(t(lang, "buy_vip_title", vip=user.vip_coins), reply_markup=kb_buy_vip(lang), parse_mode=ParseMode.MARKDOWN)
 
@@ -475,13 +698,28 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         if user.is_blocked:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         if not settings.toyyibpay_enabled or not toyyib:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer("ToyyibPay is not configured.")
             return
 
@@ -500,6 +738,11 @@ async def main() -> None:
         )
         invoice_id = await db.create_invoice(cb.from_user.id, "vip_coin", amount_myr, qty, bill_code, bill_url, settings.invoice_expire_minutes, meta={"external_ref": external_ref})
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(
             t(lang, "invoice_created", type="VIP Coins", amount=amount_myr, mins=settings.invoice_expire_minutes),
             parse_mode=ParseMode.MARKDOWN,
@@ -511,13 +754,28 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         if not settings.toyyibpay_enabled or not toyyib:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer("ToyyibPay is not configured.")
             return
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(t(lang, "payment_warning"), parse_mode=ParseMode.MARKDOWN)
         await cb.message.answer(t(lang, "buy_star_title"), reply_markup=kb_buy_star(lang), parse_mode=ParseMode.MARKDOWN)
 
@@ -526,13 +784,28 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         if user.is_blocked:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         if not settings.toyyibpay_enabled or not toyyib:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer("ToyyibPay is not configured.")
             return
 
@@ -548,6 +821,11 @@ async def main() -> None:
         )
         invoice_id = await db.create_invoice(cb.from_user.id, "star", amount_myr, 1, bill_code, bill_url, settings.invoice_expire_minutes, meta={"external_ref": external_ref})
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(
             t(lang, "invoice_created", type="VIP Star", amount=amount_myr, mins=settings.invoice_expire_minutes),
             parse_mode=ParseMode.MARKDOWN,
@@ -559,23 +837,48 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         if not settings.toyyibpay_enabled or not toyyib:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer("ToyyibPay is not configured.")
             return
         invoice_id = int(cb.data.split(":")[1])
         inv = await db.get_invoice(invoice_id)
         if not inv or int(inv["user_id"]) != cb.from_user.id:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         if inv["status"] == "paid":
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "invoice_paid"))
             return
         if inv["status"] == "expired":
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "invoice_expired"))
             return
 
@@ -583,6 +886,11 @@ async def main() -> None:
         paid = await toyyib.is_bill_paid(inv["bill_code"])
         if not paid:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "invoice_pending"))
             return
 
@@ -601,6 +909,11 @@ async def main() -> None:
             await db.increment_total_spent(cb.from_user.id, amount)
 
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(t(lang, "invoice_paid"))
         # back to menu
         user = await db.get_user(cb.from_user.id)
@@ -612,40 +925,80 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         if user.is_blocked:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "blocked"))
             return
         channel = cb.data.split(":")[1]
         if channel not in ("free", "vip", "star"):
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
 
         if channel == "free":
             free_used = await db.count_claims_last_hour("free")
             if free_used >= settings.free_slots_per_hour:
                 await cb.answer()
+
+                try:
+                    await cb.message.delete()
+                except Exception:
+                    pass
                 await cb.message.answer(t(lang, "free_full", free_used=free_used, free_limit=settings.free_slots_per_hour))
                 return
             if user.credits < settings.free_claim_cost_credits:
                 await cb.answer()
+
+                try:
+                    await cb.message.delete()
+                except Exception:
+                    pass
                 await cb.message.answer(t(lang, "need_credits"))
                 return
         elif channel == "vip":
             if user.vip_coins < settings.vip_claim_cost_vip_coins:
                 await cb.answer()
+
+                try:
+                    await cb.message.delete()
+                except Exception:
+                    pass
                 await cb.message.answer(t(lang, "need_vip_coins"))
                 return
         elif channel == "star":
             star_until = str_to_dt(user.star_active_until)
             if not (star_until and star_until > utcnow()):
                 await cb.answer()
+
+                try:
+                    await cb.message.delete()
+                except Exception:
+                    pass
                 await cb.message.answer(t(lang, "star_inactive"))
                 return
 
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(t(lang, "select_protocol"), reply_markup=kb_protocols(lang, "claim", channel))
 
     # --- Claim / Convert ---
@@ -654,10 +1007,20 @@ async def main() -> None:
         user = await db.get_user(cb.from_user.id)
         if not user:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
         lang = normalize_lang(user.language)
         if user.is_blocked:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "blocked"))
             return
 
@@ -668,15 +1031,30 @@ async def main() -> None:
 
         if protocol not in ("ssh", "vless", "trojan"):
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             return
 
         # prerequisites
         if not user.is_subscribed:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "subscribe_required"), reply_markup=kb_subscription(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
         if not user.agreement_accepted:
             await cb.answer()
+
+            try:
+                await cb.message.delete()
+            except Exception:
+                pass
             await cb.message.answer(t(lang, "agreement_required"), reply_markup=kb_agreement(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
 
@@ -692,6 +1070,11 @@ async def main() -> None:
             pool = "FREE"
             if user.credits < cost_credits:
                 await cb.answer()
+
+                try:
+                    await cb.message.delete()
+                except Exception:
+                    pass
                 await cb.message.answer(t(lang, "convert_need", need=cost_credits))
                 return
         else:
@@ -702,10 +1085,20 @@ async def main() -> None:
                 free_used = await db.count_claims_last_hour("free")
                 if free_used >= settings.free_slots_per_hour:
                     await cb.answer()
+
+                    try:
+                        await cb.message.delete()
+                    except Exception:
+                        pass
                     await cb.message.answer(t(lang, "free_full", free_used=free_used, free_limit=settings.free_slots_per_hour))
                     return
                 if user.credits < cost_credits:
                     await cb.answer()
+
+                    try:
+                        await cb.message.delete()
+                    except Exception:
+                        pass
                     await cb.message.answer(t(lang, "need_credits"))
                     return
             elif channel == "vip":
@@ -714,6 +1107,11 @@ async def main() -> None:
                 pool = "FREE"
                 if user.vip_coins < cost_vip:
                     await cb.answer()
+
+                    try:
+                        await cb.message.delete()
+                    except Exception:
+                        pass
                     await cb.message.answer(t(lang, "need_vip_coins"))
                     return
             elif channel == "star":
@@ -722,13 +1120,28 @@ async def main() -> None:
                 star_until = str_to_dt(user.star_active_until)
                 if not (star_until and star_until > utcnow()):
                     await cb.answer()
+
+                    try:
+                        await cb.message.delete()
+                    except Exception:
+                        pass
                     await cb.message.answer(t(lang, "star_inactive"))
                     return
             else:
                 await cb.answer()
+
+                try:
+                    await cb.message.delete()
+                except Exception:
+                    pass
                 return
 
         await cb.answer()
+
+        try:
+            await cb.message.delete()
+        except Exception:
+            pass
         await cb.message.answer(t(lang, "creating"))
 
         # select server + create
@@ -797,4 +1210,5 @@ async def main() -> None:
 
 if __name__ == "__main__":
     import os
+import re
     asyncio.run(main())

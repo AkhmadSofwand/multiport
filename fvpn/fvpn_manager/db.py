@@ -1,3 +1,4 @@
+\
 from __future__ import annotations
 
 import json
@@ -7,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Tuple
 
 import aiosqlite
+import re
 
 
 def utcnow() -> datetime:
@@ -547,6 +549,11 @@ class Database:
             await db.close()
 
     async def add_server(self, pool: str, name: str, base_url: str, api_key: str, max_users: int = 100) -> int:
+        # normalisasi input
+        pool = (pool or "").strip().upper()
+        base_url = (base_url or "").strip().rstrip("/")
+        if base_url and not re.match(r"^https?://", base_url):
+            base_url = "http://" + base_url
         db = await self.connect()
         try:
             cur = await db.execute(
