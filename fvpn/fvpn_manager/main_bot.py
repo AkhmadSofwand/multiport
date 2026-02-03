@@ -194,7 +194,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer("⛔ Akses ditolak.")
+        await cb.message.edit_text("⛔ Akses ditolak.")
         return
 
     action = cb.data.split(":", 1)[1]
@@ -206,21 +206,21 @@ async def on_admin_buttons(cb: CallbackQuery):
         pass
 
     if action == "add_server":
-        await cb.message.answer(
+        await cb.message.edit_text(
             "➕ **Add Server**\n\n"
             "Guna command berikut (contoh):\n"
             "`/addserver FREE free1 http://IP:7000 <SECRET> 400`\n"
             "`/addserver STAR star1 http://IP:7000 <SECRET> 400`\n\n"
             "Nota: Port **7000** agent biasanya **HTTP**, jadi elakkan `https://` kecuali kau betul-betul set TLS.\n",
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=kb_admin(),
+            reply_markup=kb_admin(lang),
         )
         return
 
     if action == "list_servers":
         rows = await db.list_servers()
         if not rows:
-            await cb.message.answer("📭 Tiada server dalam database.", reply_markup=kb_admin())
+            await cb.message.edit_text("📭 Tiada server dalam database.", reply_markup=kb_admin(lang))
             return
         msg = ["📋 **Servers**\n"]
         for s in rows:
@@ -228,21 +228,21 @@ async def on_admin_buttons(cb: CallbackQuery):
                 f"#{s['id']} pool={s['pool']} enabled={s['enabled']} max={s['max_users']} name={s['name']}\n"
                 f"url={s['base_url']}"
             )
-        await cb.message.answer("\n".join(msg), parse_mode=ParseMode.MARKDOWN, reply_markup=kb_admin())
+        await cb.message.edit_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN, reply_markup=kb_admin(lang))
         return
 
     if action == "unblock_user":
-        await cb.message.answer(
+        await cb.message.edit_text(
             "🔓 **Unblock User**\n\n"
             "Guna command:\n"
             "`/unblock <TELEGRAM_USER_ID>`\n",
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=kb_admin(),
+            reply_markup=kb_admin(lang),
         )
         return
 
     # fallback
-    await cb.message.answer("❓ Action tak dikenali.", reply_markup=kb_admin())
+    await cb.message.edit_text("❓ Action tak dikenali.", reply_markup=kb_admin(lang))
 
 @dp.message(Command("addserver"))
     async def addserver_cmd(message: Message) -> None:
@@ -352,7 +352,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "subscription_fail"))
+            await cb.message.edit_text(t(lang, "subscription_fail"))
             return
         # mark subscribed and give 1 credit if first time
         first_time, gave_credit = await db.mark_subscribed(cb.from_user.id, give_credit_if_first=True)
@@ -369,13 +369,13 @@ async def on_admin_buttons(cb: CallbackQuery):
         except Exception:
             pass
         if first_time and gave_credit:
-            await cb.message.answer(t(lang, "subscription_ok"), parse_mode=ParseMode.MARKDOWN)
+            await cb.message.edit_text(t(lang, "subscription_ok"), parse_mode=ParseMode.MARKDOWN)
         else:
-            await cb.message.answer(t(lang, "subscription_already_ok"))
+            await cb.message.edit_text(t(lang, "subscription_already_ok"))
         # proceed to agreement
         user = await db.get_user(cb.from_user.id)
         if user and not user.agreement_accepted:
-            await cb.message.answer(
+            await cb.message.edit_text(
                 t(lang, "agreement_required"),
                 reply_markup=kb_agreement(settings, lang),
                 parse_mode=ParseMode.MARKDOWN,
@@ -402,7 +402,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer("✅ Accepted.")
+        await cb.message.edit_text("✅ Accepted.")
         user = await db.get_user(cb.from_user.id)
         await render_gate(bot, db, settings, cb.message.chat.id, user)  # type: ignore
 
@@ -425,7 +425,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "subscribe_required"), reply_markup=kb_subscription(settings, lang), parse_mode=ParseMode.MARKDOWN)
+            await cb.message.edit_text(t(lang, "subscribe_required"), reply_markup=kb_subscription(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
         if not user.agreement_accepted:
             await cb.answer()
@@ -434,7 +434,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "agreement_required"), reply_markup=kb_agreement(settings, lang), parse_mode=ParseMode.MARKDOWN)
+            await cb.message.edit_text(t(lang, "agreement_required"), reply_markup=kb_agreement(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
 
         free_used = await db.count_claims_last_hour("free")
@@ -446,7 +446,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(
+        await cb.message.edit_text(
             t(
                 lang,
                 "select_channel",
@@ -479,7 +479,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "subscribe_required"), reply_markup=kb_subscription(settings, lang), parse_mode=ParseMode.MARKDOWN)
+            await cb.message.edit_text(t(lang, "subscribe_required"), reply_markup=kb_subscription(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
         if not user.agreement_accepted:
             await cb.answer()
@@ -488,7 +488,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "agreement_required"), reply_markup=kb_agreement(settings, lang), parse_mode=ParseMode.MARKDOWN)
+            await cb.message.edit_text(t(lang, "agreement_required"), reply_markup=kb_agreement(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
 
         await cb.answer()
@@ -497,7 +497,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(
+        await cb.message.edit_text(
             t(lang, "convert_info", credits=user.credits),
             reply_markup=kb_protocols(lang, "convert", "convert"),
             parse_mode=ParseMode.MARKDOWN,
@@ -524,7 +524,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(
+        await cb.message.edit_text(
             t(
                 lang,
                 "profile",
@@ -561,7 +561,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(
+        await cb.message.edit_text(
             t(lang, "invite", refs=user.referrals_count, credits=user.credits, link=link),
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=kb_back(lang),
@@ -586,7 +586,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "checkin_already"), reply_markup=kb_back(lang))
+            await cb.message.edit_text(t(lang, "checkin_already"), reply_markup=kb_back(lang))
             return
         points = await db.do_checkin(user.user_id)
         await cb.answer()
@@ -595,7 +595,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(t(lang, "checkin_ok", points=points), reply_markup=kb_back(lang))
+        await cb.message.edit_text(t(lang, "checkin_ok", points=points), reply_markup=kb_back(lang))
 
     @dp.callback_query(F.data == "act:lang")
     async def act_lang(cb: CallbackQuery) -> None:
@@ -615,7 +615,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(t(lang, "lang_choose"), reply_markup=kb_language(lang))
+        await cb.message.edit_text(t(lang, "lang_choose"), reply_markup=kb_language(lang))
 
     @dp.callback_query(F.data.startswith("setlang:"))
     async def setlang(cb: CallbackQuery) -> None:
@@ -659,7 +659,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(t(lang, "support_hint", support_bot=support_username), reply_markup=kb_back(lang))
+        await cb.message.edit_text(t(lang, "support_hint", support_bot=support_username), reply_markup=kb_back(lang))
 
     # --- Payment ---
 
@@ -682,7 +682,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer("ToyyibPay is not configured.")
+            await cb.message.edit_text("ToyyibPay is not configured.")
             return
         await cb.answer()
 
@@ -690,8 +690,8 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(t(lang, "payment_warning"), parse_mode=ParseMode.MARKDOWN)
-        await cb.message.answer(t(lang, "buy_vip_title", vip=user.vip_coins), reply_markup=kb_buy_vip(lang), parse_mode=ParseMode.MARKDOWN)
+        await cb.message.edit_text(t(lang, "payment_warning"), parse_mode=ParseMode.MARKDOWN)
+        await cb.message.edit_text(t(lang, "buy_vip_title", vip=user.vip_coins), reply_markup=kb_buy_vip(lang), parse_mode=ParseMode.MARKDOWN)
 
     @dp.callback_query(F.data.startswith("buyvip:"))
     async def buyvip(cb: CallbackQuery) -> None:
@@ -720,7 +720,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer("ToyyibPay is not configured.")
+            await cb.message.edit_text("ToyyibPay is not configured.")
             return
 
         _, qty_s, myr_s = cb.data.split(":")
@@ -743,7 +743,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(
+        await cb.message.edit_text(
             t(lang, "invoice_created", type="VIP Coins", amount=amount_myr, mins=settings.invoice_expire_minutes),
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=kb_invoice(lang, invoice_id, bill_url),
@@ -768,7 +768,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer("ToyyibPay is not configured.")
+            await cb.message.edit_text("ToyyibPay is not configured.")
             return
         await cb.answer()
 
@@ -776,8 +776,8 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(t(lang, "payment_warning"), parse_mode=ParseMode.MARKDOWN)
-        await cb.message.answer(t(lang, "buy_star_title"), reply_markup=kb_buy_star(lang), parse_mode=ParseMode.MARKDOWN)
+        await cb.message.edit_text(t(lang, "payment_warning"), parse_mode=ParseMode.MARKDOWN)
+        await cb.message.edit_text(t(lang, "buy_star_title"), reply_markup=kb_buy_star(lang), parse_mode=ParseMode.MARKDOWN)
 
     @dp.callback_query(F.data.startswith("buystar:"))
     async def buystar(cb: CallbackQuery) -> None:
@@ -806,7 +806,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer("ToyyibPay is not configured.")
+            await cb.message.edit_text("ToyyibPay is not configured.")
             return
 
         amount_myr = 250.0
@@ -826,7 +826,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(
+        await cb.message.edit_text(
             t(lang, "invoice_created", type="VIP Star", amount=amount_myr, mins=settings.invoice_expire_minutes),
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=kb_invoice(lang, invoice_id, bill_url),
@@ -851,7 +851,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer("ToyyibPay is not configured.")
+            await cb.message.edit_text("ToyyibPay is not configured.")
             return
         invoice_id = int(cb.data.split(":")[1])
         inv = await db.get_invoice(invoice_id)
@@ -870,7 +870,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "invoice_paid"))
+            await cb.message.edit_text(t(lang, "invoice_paid"))
             return
         if inv["status"] == "expired":
             await cb.answer()
@@ -879,7 +879,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "invoice_expired"))
+            await cb.message.edit_text(t(lang, "invoice_expired"))
             return
 
         # check paid
@@ -891,7 +891,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "invoice_pending"))
+            await cb.message.edit_text(t(lang, "invoice_pending"))
             return
 
         # mark paid
@@ -914,7 +914,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(t(lang, "invoice_paid"))
+        await cb.message.edit_text(t(lang, "invoice_paid"))
         # back to menu
         user = await db.get_user(cb.from_user.id)
         await render_gate(bot, db, settings, cb.message.chat.id, user)  # type: ignore
@@ -939,7 +939,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "blocked"))
+            await cb.message.edit_text(t(lang, "blocked"))
             return
         channel = cb.data.split(":")[1]
         if channel not in ("free", "vip", "star"):
@@ -960,7 +960,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                     await cb.message.delete()
                 except Exception:
                     pass
-                await cb.message.answer(t(lang, "free_full", free_used=free_used, free_limit=settings.free_slots_per_hour))
+                await cb.message.edit_text(t(lang, "free_full", free_used=free_used, free_limit=settings.free_slots_per_hour))
                 return
             if user.credits < settings.free_claim_cost_credits:
                 await cb.answer()
@@ -969,7 +969,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                     await cb.message.delete()
                 except Exception:
                     pass
-                await cb.message.answer(t(lang, "need_credits"))
+                await cb.message.edit_text(t(lang, "need_credits"))
                 return
         elif channel == "vip":
             if user.vip_coins < settings.vip_claim_cost_vip_coins:
@@ -979,7 +979,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                     await cb.message.delete()
                 except Exception:
                     pass
-                await cb.message.answer(t(lang, "need_vip_coins"))
+                await cb.message.edit_text(t(lang, "need_vip_coins"))
                 return
         elif channel == "star":
             star_until = str_to_dt(user.star_active_until)
@@ -990,7 +990,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                     await cb.message.delete()
                 except Exception:
                     pass
-                await cb.message.answer(t(lang, "star_inactive"))
+                await cb.message.edit_text(t(lang, "star_inactive"))
                 return
 
         await cb.answer()
@@ -999,7 +999,7 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(t(lang, "select_protocol"), reply_markup=kb_protocols(lang, "claim", channel))
+        await cb.message.edit_text(t(lang, "select_protocol"), reply_markup=kb_protocols(lang, "claim", channel))
 
     # --- Claim / Convert ---
     @dp.callback_query(F.data.startswith("claim:") | F.data.startswith("convert:"))
@@ -1021,7 +1021,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "blocked"))
+            await cb.message.edit_text(t(lang, "blocked"))
             return
 
         parts = cb.data.split(":")
@@ -1046,7 +1046,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "subscribe_required"), reply_markup=kb_subscription(settings, lang), parse_mode=ParseMode.MARKDOWN)
+            await cb.message.edit_text(t(lang, "subscribe_required"), reply_markup=kb_subscription(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
         if not user.agreement_accepted:
             await cb.answer()
@@ -1055,7 +1055,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                 await cb.message.delete()
             except Exception:
                 pass
-            await cb.message.answer(t(lang, "agreement_required"), reply_markup=kb_agreement(settings, lang), parse_mode=ParseMode.MARKDOWN)
+            await cb.message.edit_text(t(lang, "agreement_required"), reply_markup=kb_agreement(settings, lang), parse_mode=ParseMode.MARKDOWN)
             return
 
         # determine cost & validity & pool
@@ -1075,7 +1075,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                     await cb.message.delete()
                 except Exception:
                     pass
-                await cb.message.answer(t(lang, "convert_need", need=cost_credits))
+                await cb.message.edit_text(t(lang, "convert_need", need=cost_credits))
                 return
         else:
             if channel == "free":
@@ -1090,7 +1090,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                         await cb.message.delete()
                     except Exception:
                         pass
-                    await cb.message.answer(t(lang, "free_full", free_used=free_used, free_limit=settings.free_slots_per_hour))
+                    await cb.message.edit_text(t(lang, "free_full", free_used=free_used, free_limit=settings.free_slots_per_hour))
                     return
                 if user.credits < cost_credits:
                     await cb.answer()
@@ -1099,7 +1099,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                         await cb.message.delete()
                     except Exception:
                         pass
-                    await cb.message.answer(t(lang, "need_credits"))
+                    await cb.message.edit_text(t(lang, "need_credits"))
                     return
             elif channel == "vip":
                 days = settings.vip_claim_validity_days
@@ -1112,7 +1112,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                         await cb.message.delete()
                     except Exception:
                         pass
-                    await cb.message.answer(t(lang, "need_vip_coins"))
+                    await cb.message.edit_text(t(lang, "need_vip_coins"))
                     return
             elif channel == "star":
                 days = settings.vip_claim_validity_days  # still 3 days
@@ -1125,7 +1125,7 @@ async def on_admin_buttons(cb: CallbackQuery):
                         await cb.message.delete()
                     except Exception:
                         pass
-                    await cb.message.answer(t(lang, "star_inactive"))
+                    await cb.message.edit_text(t(lang, "star_inactive"))
                     return
             else:
                 await cb.answer()
@@ -1142,18 +1142,18 @@ async def on_admin_buttons(cb: CallbackQuery):
             await cb.message.delete()
         except Exception:
             pass
-        await cb.message.answer(t(lang, "creating"))
+        await cb.message.edit_text(t(lang, "creating"))
 
         # select server + create
         server = await select_server(db, pool, bot, settings.admin_id, timeout_sec=settings.server_ping_timeout_sec)
         if not server:
-            await cb.message.answer("🚫 Server not available right now.")
+            await cb.message.edit_text("🚫 Server not available right now.")
             return
 
         try:
             res = await create_vpn_account(server, protocol, days, timeout_sec=settings.agent_timeout_sec)
         except AgentError as e:
-            await cb.message.answer(f"❌ {e.message}")
+            await cb.message.edit_text(f"❌ {e.message}")
             return
 
         # Deduct balances (after success)
@@ -1179,7 +1179,7 @@ async def on_admin_buttons(cb: CallbackQuery):
         exp = res.get("expires_at", "-")
         if protocol == "ssh":
             details = res.get("details", {})
-            await cb.message.answer(
+            await cb.message.edit_text(
                 t(
                     lang,
                     "created_ssh",
@@ -1197,8 +1197,8 @@ async def on_admin_buttons(cb: CallbackQuery):
             uri = res.get("details", {}).get("uri", "")
             # requirement: output link URI sahaja (vless://… / trojan://…)
             if uri:
-                await cb.message.answer(uri)
-            await cb.message.answer(
+                await cb.message.edit_text(uri)
+            await cb.message.edit_text(
                 t(lang, "created_info", days=days, exp=exp, rules=rules),
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=kb_back(lang),
